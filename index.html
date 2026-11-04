@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/jpeg" href="/src/assets/images/ev_favicon_1784029126611.jpg" />
+    <link rel="icon" type="image/jpeg" href="./src/assets/images/ev_favicon_1784029126611.jpg" />
     <script>
       (function() {
         try {
@@ -30,7 +30,16 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
+    <script>
+      (function() {
+        try {
+          if (window.location.hostname.endsWith('github.io') && document.querySelector('script[src*="src/main.tsx"]')) {
+            window.location.replace('./docs/index.html');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </body>
 </html>
 

@@ -169,6 +169,7 @@ function gasProxyPlugin() {
 
 export default defineConfig(() => {
   return {
+    base: './',
     plugins: [react(), tailwindcss(), gasProxyPlugin()],
     resolve: {
       alias: {

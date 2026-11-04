@@ -156,11 +156,62 @@ export default function App() {
     };
   });
 
+  const deduplicateTrucksList = (list: EVTruck[]): EVTruck[] => {
+    const map = new Map<string, EVTruck>();
+    for (const item of list || []) {
+      const cleanId = (item?.id || '').toString().trim().toUpperCase();
+      if (!cleanId) continue;
+      const normalized: EVTruck = { ...item, id: cleanId };
+      const existing = map.get(cleanId);
+      if (!existing) {
+        map.set(cleanId, normalized);
+      } else {
+        const tExisting = new Date(existing.lastUpdated || '').getTime() || 0;
+        const tNew = new Date(normalized.lastUpdated || '').getTime() || 0;
+        const newer = tNew >= tExisting ? normalized : existing;
+        const older = tNew >= tExisting ? existing : normalized;
+        map.set(cleanId, {
+          ...older,
+          ...newer,
+          id: cleanId,
+          licensePlate: newer.licensePlate || older.licensePlate,
+          model: newer.model || older.model,
+          batteryCapacity: newer.batteryCapacity || older.batteryCapacity || 282,
+          currentOdometer: Math.max(Number(existing.currentOdometer) || 0, Number(normalized.currentOdometer) || 0),
+        });
+      }
+    }
+    return Array.from(map.values());
+  };
+
+  const deduplicateStationsList = (list: ChargingStation[]): ChargingStation[] => {
+    const map = new Map<string, ChargingStation>();
+    for (const item of list || []) {
+      const cleanId = (item?.id || '').toString().trim().toUpperCase();
+      if (!cleanId) continue;
+      const normalized: ChargingStation = { ...item, id: cleanId };
+      const existing = map.get(cleanId);
+      if (!existing) {
+        map.set(cleanId, normalized);
+      } else {
+        const tExisting = new Date(existing.lastUpdated || '').getTime() || 0;
+        const tNew = new Date(normalized.lastUpdated || '').getTime() || 0;
+        map.set(cleanId, tNew >= tExisting ? normalized : existing);
+      }
+    }
+    return Array.from(map.values());
+  };
+
   // Table Data State with LocalStorage Caches for High Resiliency
   const [trucks, setTrucks] = useState<EVTruck[]>(() => {
     try {
       const saved = localStorage.getItem('ev_cached_trucks');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return deduplicateTrucksList(parsed);
+        }
+      }
     } catch (e) {}
     return [
       { id: 'TTEV-19', licensePlate: '83-9919', model: 'SANY EV Truck', batteryCapacity: 218, currentSOC: 35, status: 'Available', lastUpdated: new Date().toISOString(), currentOdometer: 14520 },
@@ -178,7 +229,12 @@ export default function App() {
   const [stations, setStations] = useState<ChargingStation[]>(() => {
     try {
       const saved = localStorage.getItem('ev_cached_stations');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return deduplicateStationsList(parsed);
+        }
+      }
     } catch (e) {}
     return [
       { id: 'DC-01', name: 'ตู้ชาร์จ DC-01 (150kW)', chargerType: 'DC', powerOutput: 150, status: 'Available', occupyingTruckId: '', lastUpdated: new Date().toISOString() },
@@ -291,7 +347,7 @@ export default function App() {
     return Array.from(map.values());
   }, [sessions]);
 
-  // Harmonized Trucks: status is strictly derived from active charging sessions (SSOT)
+  // Harmonized Trucks: status is strictly derived from active charging sessions (SSOT) and guaranteed unique by ID
   const harmonizedTrucks = useMemo(() => {
     const activeTruckMap = new Map<string, SessionLog>();
     for (const s of activeChargingSessions) {
@@ -300,7 +356,8 @@ export default function App() {
       }
     }
 
-    return trucks.map(truck => {
+    const uniqueTrucks = deduplicateTrucksList(trucks);
+    return uniqueTrucks.map(truck => {
       const activeSession = activeTruckMap.get(truck.id.trim().toUpperCase());
       const isCharging = Boolean(activeSession);
       const dynamicStatus: 'Available' | 'Charging' | 'Maintenance' = 
@@ -315,7 +372,7 @@ export default function App() {
     });
   }, [trucks, activeChargingSessions]);
 
-  // Harmonized Stations: status & occupyingTruckId strictly derived from active charging sessions (SSOT)
+  // Harmonized Stations: status & occupyingTruckId strictly derived from active charging sessions (SSOT) and guaranteed unique by ID
   const harmonizedStations = useMemo(() => {
     const activeStationMap = new Map<string, SessionLog>();
     for (const s of activeChargingSessions) {
@@ -324,7 +381,8 @@ export default function App() {
       }
     }
 
-    return stations.map(station => {
+    const uniqueStations = deduplicateStationsList(stations);
+    return uniqueStations.map(station => {
       if (station.status === 'Maintenance') {
         return station;
       }
@@ -663,8 +721,8 @@ export default function App() {
       if (data) {
         // Only overwrite live Trucks/Stations/Queue if no write is currently in flight
         if (inFlightWritesRef.current === 0 && pendingTransactionsRef.current.length === 0) {
-          if (data.trucks && data.trucks.length > 0) setTrucks(data.trucks);
-          if (data.stations && data.stations.length > 0) setStations(data.stations);
+          if (data.trucks && data.trucks.length > 0) setTrucks(deduplicateTrucksList(data.trucks));
+          if (data.stations && data.stations.length > 0) setStations(deduplicateStationsList(data.stations));
           if (data.queue) setQueue(data.queue);
         }
         if (data.users && data.users.length > 0) {

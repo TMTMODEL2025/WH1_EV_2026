@@ -237,13 +237,13 @@ export const googleSheetsDirect = {
     const result = await sheetsFetch(spreadsheetId, `/values:batchGet?ranges=${ranges.join('&ranges=')}`, token);
     const valueRanges = result.valueRanges || [];
 
-    // Parse Trucks
+    // Parse Trucks with deduplication by Truck ID
     const trucksRowData = valueRanges[0]?.values || [];
-    const trucks: EVTruck[] = parseSheetRows(trucksRowData, (row) => {
+    const rawTrucks: EVTruck[] = parseSheetRows(trucksRowData, (row) => {
       const rawStatus = (row[5] || '').toString().trim();
       const status = rawStatus.toLowerCase() === 'charging' ? 'Charging' : (rawStatus.toLowerCase() === 'maintenance' ? 'Maintenance' : 'Available');
       return {
-        id: (row[0] || '').toString().trim(),
+        id: (row[0] || '').toString().trim().toUpperCase(),
         licensePlate: (row[1] || '').toString().trim(),
         model: (row[2] || '').toString().trim(),
         batteryCapacity: parseFloat(row[3]) || 0,
@@ -253,14 +253,37 @@ export const googleSheetsDirect = {
         currentOdometer: parseFloat(String(row[7] || '0').replace(/,/g, '')) || 0,
       };
     });
+    const trucksMap = new Map<string, EVTruck>();
+    for (const t of rawTrucks) {
+      if (!t.id) continue;
+      const existing = trucksMap.get(t.id);
+      if (!existing) {
+        trucksMap.set(t.id, t);
+      } else {
+        const tExisting = new Date(existing.lastUpdated || '').getTime() || 0;
+        const tNew = new Date(t.lastUpdated || '').getTime() || 0;
+        const newer = tNew >= tExisting ? t : existing;
+        const older = tNew >= tExisting ? existing : t;
+        trucksMap.set(t.id, {
+          ...older,
+          ...newer,
+          id: t.id,
+          licensePlate: newer.licensePlate || older.licensePlate,
+          model: newer.model || older.model,
+          batteryCapacity: newer.batteryCapacity || older.batteryCapacity || 282,
+          currentOdometer: Math.max(Number(existing.currentOdometer) || 0, Number(t.currentOdometer) || 0),
+        });
+      }
+    }
+    const trucks = Array.from(trucksMap.values());
 
-    // Parse Stations
+    // Parse Stations with deduplication by Station ID
     const stationsRowData = valueRanges[1]?.values || [];
-    const stations: ChargingStation[] = parseSheetRows(stationsRowData, (row) => {
+    const rawStations: ChargingStation[] = parseSheetRows(stationsRowData, (row) => {
       const rawStatus = (row[4] || '').toString().trim();
       const status = rawStatus.toLowerCase() === 'occupied' ? 'Occupied' : (rawStatus.toLowerCase() === 'maintenance' ? 'Maintenance' : 'Available');
       return {
-        id: (row[0] || '').toString().trim(),
+        id: (row[0] || '').toString().trim().toUpperCase(),
         name: (row[1] || '').toString().trim(),
         chargerType: (row[2] || 'DC Fast Charger') as any,
         powerOutput: parseFloat(row[3]) || 0,
@@ -269,10 +292,23 @@ export const googleSheetsDirect = {
         lastUpdated: (row[6] || '').toString().trim(),
       };
     });
+    const stationsMap = new Map<string, ChargingStation>();
+    for (const s of rawStations) {
+      if (!s.id) continue;
+      const existing = stationsMap.get(s.id);
+      if (!existing) {
+        stationsMap.set(s.id, s);
+      } else {
+        const tExisting = new Date(existing.lastUpdated || '').getTime() || 0;
+        const tNew = new Date(s.lastUpdated || '').getTime() || 0;
+        stationsMap.set(s.id, tNew >= tExisting ? s : existing);
+      }
+    }
+    const stations = Array.from(stationsMap.values());
 
-    // Parse Queue
+    // Parse Queue with deduplication by Queue ID
     const queueRowData = valueRanges[2]?.values || [];
-    const queue: QueueItem[] = parseSheetRows(queueRowData, (row) => ({
+    const rawQueue: QueueItem[] = parseSheetRows(queueRowData, (row) => ({
       id: (row[0] || '').toString().trim(),
       truckId: (row[1] || '').toString().trim(),
       priority: (row[2] || 'Normal') as any,
@@ -281,6 +317,12 @@ export const googleSheetsDirect = {
       requestTime: (row[5] || '').toString().trim(),
       estimatedWaitTime: parseFloat(row[6]) || 0,
     }));
+    const queueMap = new Map<string, QueueItem>();
+    for (const q of rawQueue) {
+      if (!q.id) continue;
+      queueMap.set(q.id, q);
+    }
+    const queue = Array.from(queueMap.values());
 
     // Parse Sessions with intelligent deduplication (Completed status takes precedence over Charging for duplicate Session IDs)
     const sessionsRowData = valueRanges[3]?.values || [];
@@ -324,15 +366,22 @@ export const googleSheetsDirect = {
     }
     const sessions = Array.from(sessionsMap.values());
 
-    // Parse Users
+    // Parse Users with deduplication
     let users: UserItem[] = [];
     if (hasUsers && valueRanges[4]) {
       const usersRowData = valueRanges[4]?.values || [];
-      users = parseSheetRows(usersRowData, (row) => ({
-        employeeId: row[0]?.toString() || '',
-        name: row[1]?.toString() || '',
+      const rawUsers = parseSheetRows(usersRowData, (row) => ({
+        employeeId: (row[0] || '').toString().trim(),
+        name: (row[1] || '').toString().trim(),
         role: (row[2]?.toString() as any) || 'Driver',
       }));
+      const usersMap = new Map<string, UserItem>();
+      for (const u of rawUsers) {
+        const key = u.employeeId || u.name;
+        if (!key) continue;
+        usersMap.set(key, u);
+      }
+      users = Array.from(usersMap.values());
     }
 
     return { trucks, stations, queue, sessions, users };

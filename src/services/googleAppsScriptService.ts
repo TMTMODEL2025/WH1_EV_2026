@@ -87,8 +87,10 @@ async function fetchGasWithRetry(url: string, options: RequestInit = {}, retries
       let isOk = false;
 
       // Strategy 1: If proxy is available or not yet tested, try /api/gas-proxy (Vite dev server or Netlify Function)
+      // On GitHub Pages (*.github.io), skip /api/gas-proxy and connect directly to Google Apps Script
       const isBrowser = typeof window !== 'undefined';
-      if (isBrowser && window.location && isProxyAvailable !== false) {
+      const isGitHubPages = isBrowser && window.location && window.location.hostname.endsWith('github.io');
+      if (isBrowser && window.location && !isGitHubPages && isProxyAvailable !== false) {
         try {
           const fastParam = isFast ? '&fast=1' : '';
           const proxyUrl = `/api/gas-proxy?url=${encodeURIComponent(url)}${fastParam}`;
@@ -190,11 +192,11 @@ export const googleAppsScriptService = {
       return { trucks: [], stations: [], queue: [], sessions: [], users: [], isPartialSessions: false, totalSessionsCount: 0, hasMore: false };
     }
 
-    const trucks: EVTruck[] = (data.trucks || []).map((item: any) => {
+    const rawTrucks: EVTruck[] = (data.trucks || []).map((item: any) => {
       const rawStatus = (item['Status'] || '').toString().trim();
       const status = rawStatus.toLowerCase() === 'charging' ? 'Charging' : (rawStatus.toLowerCase() === 'maintenance' ? 'Maintenance' : 'Available');
       return {
-        id: (item['Truck ID'] || '').toString().trim(),
+        id: (item['Truck ID'] || '').toString().trim().toUpperCase(),
         licensePlate: (item['License Plate'] || '').toString().trim(),
         model: (item['Model'] || '').toString().trim(),
         batteryCapacity: parseFloat(item['Battery Capacity (kWh)']) || 0,
@@ -205,11 +207,35 @@ export const googleAppsScriptService = {
       };
     });
 
-    const stations: ChargingStation[] = (data.stations || []).map((item: any) => {
+    const trucksMap = new Map<string, EVTruck>();
+    for (const t of rawTrucks) {
+      if (!t.id) continue;
+      const existing = trucksMap.get(t.id);
+      if (!existing) {
+        trucksMap.set(t.id, t);
+      } else {
+        const tExisting = new Date(existing.lastUpdated || '').getTime() || 0;
+        const tNew = new Date(t.lastUpdated || '').getTime() || 0;
+        const newer = tNew >= tExisting ? t : existing;
+        const older = tNew >= tExisting ? existing : t;
+        trucksMap.set(t.id, {
+          ...older,
+          ...newer,
+          id: t.id,
+          licensePlate: newer.licensePlate || older.licensePlate,
+          model: newer.model || older.model,
+          batteryCapacity: newer.batteryCapacity || older.batteryCapacity || 282,
+          currentOdometer: Math.max(Number(existing.currentOdometer) || 0, Number(t.currentOdometer) || 0),
+        });
+      }
+    }
+    const trucks = Array.from(trucksMap.values());
+
+    const rawStations: ChargingStation[] = (data.stations || []).map((item: any) => {
       const rawStatus = (item['Status'] || '').toString().trim();
       const status = rawStatus.toLowerCase() === 'occupied' ? 'Occupied' : (rawStatus.toLowerCase() === 'maintenance' ? 'Maintenance' : 'Available');
       return {
-        id: (item['Station ID'] || '').toString().trim(),
+        id: (item['Station ID'] || '').toString().trim().toUpperCase(),
         name: (item['Station Name'] || '').toString().trim(),
         chargerType: (item['Charger Type'] || 'DC Fast Charger') as any,
         powerOutput: parseFloat(item['Power Output (kW)']) || 0,
@@ -219,7 +245,21 @@ export const googleAppsScriptService = {
       };
     });
 
-    const queue: QueueItem[] = (data.queue || []).map((item: any) => ({
+    const stationsMap = new Map<string, ChargingStation>();
+    for (const s of rawStations) {
+      if (!s.id) continue;
+      const existing = stationsMap.get(s.id);
+      if (!existing) {
+        stationsMap.set(s.id, s);
+      } else {
+        const tExisting = new Date(existing.lastUpdated || '').getTime() || 0;
+        const tNew = new Date(s.lastUpdated || '').getTime() || 0;
+        stationsMap.set(s.id, tNew >= tExisting ? s : existing);
+      }
+    }
+    const stations = Array.from(stationsMap.values());
+
+    const rawQueue: QueueItem[] = (data.queue || []).map((item: any) => ({
       id: (item['Queue ID'] || '').toString().trim(),
       truckId: (item['Truck ID'] || '').toString().trim(),
       priority: (item['Priority'] || 'Normal') as any,
@@ -228,6 +268,13 @@ export const googleAppsScriptService = {
       requestTime: (item['Request Time'] || '').toString().trim(),
       estimatedWaitTime: parseFloat(item['Estimated Wait Time (min)']) || 0,
     }));
+
+    const queueMap = new Map<string, QueueItem>();
+    for (const q of rawQueue) {
+      if (!q.id) continue;
+      queueMap.set(q.id, q);
+    }
+    const queue = Array.from(queueMap.values());
 
     const sessionsRaw: SessionLog[] = (data.sessions || []).map((item: any) => {
       const rawStatus = (item['Status'] || '').toString().trim();
@@ -292,11 +339,19 @@ export const googleAppsScriptService = {
       hasMore = startIndex > 0;
     }
 
-    const users: UserItem[] = (data.users || []).map((item: any) => ({
-      employeeId: item['Employee ID']?.toString() || '',
-      name: item['Name']?.toString() || '',
+    const rawUsers: UserItem[] = (data.users || []).map((item: any) => ({
+      employeeId: (item['Employee ID'] || '').toString().trim(),
+      name: (item['Name'] || '').toString().trim(),
       role: (item['Role']?.toString() as any) || 'Driver',
     }));
+
+    const usersMap = new Map<string, UserItem>();
+    for (const u of rawUsers) {
+      const key = u.employeeId || u.name;
+      if (!key) continue;
+      usersMap.set(key, u);
+    }
+    const users = Array.from(usersMap.values());
 
     return {
       trucks,
