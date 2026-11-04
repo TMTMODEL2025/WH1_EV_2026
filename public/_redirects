@@ -1,0 +1,2 @@
+/api/gas-proxy* /.netlify/functions/gas-proxy 200!
+/* /index.html 200

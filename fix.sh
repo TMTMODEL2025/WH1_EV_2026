@@ -1,0 +1,1 @@
+sed -i 's/<th classNa                <th className="py-2 px-3 text-right">ENERGY (kWh)<\/th>/<th className="py-2 px-3">OPERATOR<\/th><th className="py-2 px-3">START<\/th><th className="py-2 px-3">END<\/th><th className="py-2 px-3">SOC DELTA (%)<\/th><th className="py-2 px-3 text-right">ENERGY (kWh)<\/th>/g' src/components/SessionsHistory.tsx

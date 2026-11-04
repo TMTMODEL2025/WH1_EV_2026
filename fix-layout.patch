@@ -1,0 +1,146 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -563,12 +563,33 @@
+   const isDbDisconnected = (config.mode === 'direct' && !config.spreadsheetId) || (config.mode === 'gas' && !config.webAppUrl);
+ 
+   return (
+-    <div className="min-h-screen bg-slate-950 text-slate-100 flex font-sans">
++    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row font-sans relative">
++      {/* Mobile Header */}
++      <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 shrink-0">
++        <div className="flex items-center gap-3">
++          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 shadow">
++            <CloudLightning className="w-4.5 h-4.5 fill-current" />
++          </div>
++          <div>
++            <h1 className="text-xs font-bold text-white leading-tight tracking-wider">EV-CMS <span className="text-emerald-500 text-[10px] font-mono ml-1">v4.2.0</span></h1>
++          </div>
++        </div>
++        <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-slate-800 text-slate-300 rounded-lg">
++          <Menu className="w-5 h-5" />
++        </button>
++      </div>
++
++      {/* Mobile Menu Overlay */}
++      {isMobileMenuOpen && (
++        <div className="md:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setIsMobileMenuOpen(false)} />
++      )}
++
+       {/* Sidebar Rail */}
+-      <aside className="w-64 bg-slate-900 text-slate-400 flex flex-col justify-between shrink-0 border-r border-slate-800">
++      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-400 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+         <div className="p-4 space-y-6">
+           {/* Brand Logo */}
+-          <div className="flex items-center gap-3 px-2">
++          <div className="flex items-center justify-between px-2">
++            <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 shadow">
+               <CloudLightning className="w-4.5 h-4.5 fill-current" />
+             </div>
+@@ -576,6 +597,10 @@
+               <h1 className="text-xs font-bold text-white leading-tight tracking-wider">EV-CMS <span className="text-emerald-500 text-[10px] font-mono ml-1">v4.2.0</span></h1>
+               <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase font-mono">TRACTOR MANAGEMENT</span>
+             </div>
++            </div>
++            <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden p-1.5 text-slate-400 hover:text-white bg-slate-800 rounded-md">
++              <X className="w-4 h-4" />
++            </button>
+           </div>
+ 
+           {/* User badge */}
+@@ -597,7 +622,10 @@
+           <nav className="space-y-1">
+             {user.role === 'Driver' ? (
+               <button
+-                onClick={() => setActiveTab('stations')}
++                onClick={() => {
++                  setActiveTab('stations');
++                  setIsMobileMenuOpen(false);
++                }}
+                 disabled={isDbDisconnected}
+                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                   activeTab === 'stations'
+@@ -610,7 +638,10 @@
+             ) : (
+               <>
+                 <button
+-                  onClick={() => setActiveTab('dashboard')}
++                  onClick={() => {
++                    setActiveTab('dashboard');
++                    setIsMobileMenuOpen(false);
++                  }}
+                   disabled={isDbDisconnected}
+                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                     activeTab === 'dashboard'
+@@ -622,7 +653,10 @@
+                   แดชบอร์ดติดตาม
+                 </button>
+                 <button
+-                  onClick={() => setActiveTab('trucks')}
++                  onClick={() => {
++                    setActiveTab('trucks');
++                    setIsMobileMenuOpen(false);
++                  }}
+                   disabled={isDbDisconnected}
+                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                     activeTab === 'trucks'
+@@ -634,7 +668,10 @@
+                   ทะเบียนรถหัวลาก
+                 </button>
+                 <button
+-                  onClick={() => setActiveTab('stations')}
++                  onClick={() => {
++                    setActiveTab('stations');
++                    setIsMobileMenuOpen(false);
++                  }}
+                   disabled={isDbDisconnected}
+                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                     activeTab === 'stations'
+@@ -646,7 +683,10 @@
+                   สถานีและตู้ชาร์จ
+                 </button>
+                 <button
+-                  onClick={() => setActiveTab('queue')}
++                  onClick={() => {
++                    setActiveTab('queue');
++                    setIsMobileMenuOpen(false);
++                  }}
+                   disabled={isDbDisconnected}
+                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                     activeTab === 'queue'
+@@ -658,7 +698,10 @@
+                   จัดการคิวชาร์จด่วน
+                 </button>
+                 <button
+-                  onClick={() => setActiveTab('sessions')}
++                  onClick={() => {
++                    setActiveTab('sessions');
++                    setIsMobileMenuOpen(false);
++                  }}
+                   disabled={isDbDisconnected}
+                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                     activeTab === 'sessions'
+@@ -670,7 +713,10 @@
+                   ประวัติชาร์จพลังงาน
+                 </button>
+                 <button
+-                  onClick={() => setActiveTab('users')}
++                  onClick={() => {
++                    setActiveTab('users');
++                    setIsMobileMenuOpen(false);
++                  }}
+                   disabled={isDbDisconnected}
+                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                     activeTab === 'users'
+@@ -684,7 +730,10 @@
+ 
+                 <div className="pt-3 border-t border-slate-800 mt-3">
+                   <button
+-                    onClick={() => setActiveTab('setup')}
++                    onClick={() => {
++                      setActiveTab('setup');
++                      setIsMobileMenuOpen(false);
++                    }}
+                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                       activeTab === 'setup'
+                         ? 'bg-slate-800 text-emerald-400 border-l-2 border-emerald-500'

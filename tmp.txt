@@ -1,0 +1,6 @@
+    const rows: string[][] = [];
+
+    comparisonData.months.forEach(m => {
+      comparisonData.stationCompare.forEach(st => {
+        rows.push([
+          m,

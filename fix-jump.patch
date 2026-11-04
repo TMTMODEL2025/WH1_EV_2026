@@ -1,0 +1,15 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -528,11 +528,7 @@
+ 
+       setUser(customUser);
+ 
+-      if (loginData.role === 'Driver') {
+-        setActiveTab('stations');
+-      } else {
+-        setActiveTab('dashboard');
+-      }
++      setActiveTab('dashboard');
+     };
+ 
+     return (

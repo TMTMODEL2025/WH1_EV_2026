@@ -1,0 +1,25 @@
+--- src/components/CustomLogin.tsx
++++ src/components/CustomLogin.tsx
+@@ -14,6 +14,7 @@
+   Lock,
+   ArrowRight,
+   Info,
++  RefreshCw
+ } from 'lucide-react';
+ 
+ interface CustomLoginProps {
+@@ -237,6 +238,15 @@
+       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+ 
+       <div className="max-w-xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-6">
++        {isLoadingData && (
++          <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-3xl">
++            <RefreshCw className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
++            <p className="text-sm font-bold text-slate-200 tracking-wider font-mono">กำลังโหลดข้อมูลระบบ...</p>
++            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-mono">Loading Data</p>
++          </div>
++        )}
++        
+         {/* Brand Header */}
+         <div className="flex flex-col items-center text-center gap-2">
+           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-2">

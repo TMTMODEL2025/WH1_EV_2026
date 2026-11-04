@@ -1,0 +1,13 @@
+--- src/components/StationsList.tsx
++++ src/components/StationsList.tsx
+@@ -25,8 +25,8 @@
+   onToggleMaintenance,
+   onAddStation,
+   onUpdateStation,
+-  user: any;
+-  onDeleteStation
++  onDeleteStation,
++  user
+ }: StationsListProps) {
+   const [activeStationId, setActiveStationId] = useState<string | null>(null);
+   const [selectedTruckId, setSelectedTruckId] = useState<string>('');

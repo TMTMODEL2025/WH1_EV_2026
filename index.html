@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/jpeg" href="/src/assets/images/ev_favicon_1784029126611.jpg" />
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          if (originalFetch) {
+            var fetchValue = originalFetch;
+            Object.defineProperty(window, 'fetch', {
+              get: function() {
+                return fetchValue;
+              },
+              set: function(val) {
+                fetchValue = val;
+              },
+              configurable: true,
+              enumerable: true
+            });
+          }
+        } catch (e) {
+          console.warn('Sandbox fetch patch ignored:', e);
+        }
+      })();
+    </script>
+    <title>ระบบชาร์จรถไฟฟ้า TMT STEEL By Warehouse1</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

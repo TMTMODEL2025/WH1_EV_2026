@@ -1,0 +1,147 @@
+--- src/components/StationsList.tsx
++++ src/components/StationsList.tsx
+@@ -406,13 +406,15 @@
+             Activate bays, manage start/stop states, and trigger maintenance modes directly synced
+           </p>
+         </div>
+-        <button
+-          onClick={() => openStationModal()}
+-          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded transition-all flex items-center gap-2 shadow"
+-        >
+-          <Plus className="w-4 h-4 text-slate-950" />
+-          ลงทะเบียนตู้ชาร์จใหม่
+-        </button>
++        {user?.role === 'Admin' && (
++          <button
++            onClick={() => openStationModal()}
++            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded transition-all flex items-center gap-2 shadow"
++          >
++            <Plus className="w-4 h-4 text-slate-950" />
++            ลงทะเบียนตู้ชาร์จใหม่
++          </button>
++        )}
+       </div>
+ 
+       {/* Grid of Stations */}
+@@ -420,6 +422,9 @@
+         {stations.map((station, index) => {
+           const occupyingTruck = trucks.find(t => t.id === station.occupyingTruckId);
+           const activeSession = occupyingTruck ? sessions.find(s => s.stationId === station.id && s.status === 'Charging' && s.truckId === occupyingTruck.id) : null;
++          
++          const isMySession = user?.role === 'Admin' || (user?.role === 'Driver' && (activeSession?.operatorName === user?.displayName || occupyingTruck?.id === user?.vehicleId));
++          const showDetails = user?.role === 'Admin' || isMySession;
+ 
+           return (
+             <div
+@@ -455,18 +460,20 @@
+                     {station.status === 'Available' ? 'AVAILABLE' : station.status === 'Occupied' ? 'CHARGING' : 'MAINTENANCE'}
+                   </span>
+ 
+-                  <div className="flex items-center gap-1.5">
+-                    <button
+-                      onClick={() => openStationModal(station)}
+-                      className="p-1 text-slate-500 hover:text-emerald-400 rounded transition-colors bg-slate-950/40 border border-slate-800/60"
+-                      title="แก้ไขตู้ชาร์จ"
+-                    >
+-                      <Edit2 className="w-3 h-3" />
+-                    </button>
+-                    <button
+-                      onClick={() => handleDeleteStationClick(station.id)}
+-                      disabled={station.status === 'Occupied'}
+-                      className="p-1 text-slate-500 hover:text-rose-400 rounded transition-colors bg-slate-950/40 border border-slate-800/60 disabled:opacity-30 disabled:hover:text-slate-500"
+-                      title="ลบตู้ชาร์จ"
+-                    >
+-                      <Trash2 className="w-3 h-3" />
+-                    </button>
+-                  </div>
++                  {user?.role === 'Admin' && (
++                    <div className="flex items-center gap-1.5">
++                      <button
++                        onClick={() => openStationModal(station)}
++                        className="p-1 text-slate-500 hover:text-emerald-400 rounded transition-colors bg-slate-950/40 border border-slate-800/60"
++                        title="แก้ไขตู้ชาร์จ"
++                      >
++                        <Edit2 className="w-3 h-3" />
++                      </button>
++                      <button
++                        onClick={() => handleDeleteStationClick(station.id)}
++                        disabled={station.status === 'Occupied'}
++                        className="p-1 text-slate-500 hover:text-rose-400 rounded transition-colors bg-slate-950/40 border border-slate-800/60 disabled:opacity-30 disabled:hover:text-slate-500"
++                        title="ลบตู้ชาร์จ"
++                      >
++                        <Trash2 className="w-3 h-3" />
++                      </button>
++                    </div>
++                  )}
+                 </div>
+               </div>
+ 
+@@ -477,7 +484,7 @@
+ 
+               {/* Charging Live Monitor */}
+               <div className="flex-1">
+-                {station.status === 'Occupied' && occupyingTruck ? (
++                {station.status === 'Occupied' && occupyingTruck && showDetails ? (
+                   <div className="bg-slate-950 border border-slate-850 rounded p-3 space-y-3">
+                     <div className="flex justify-between items-center text-xs">
+                       <span className="font-bold text-slate-300 flex items-center gap-1.5 font-mono">
+@@ -514,6 +521,11 @@
+                       <span>CAP: {occupyingTruck.batteryCapacity} kWh</span>
+                     </div>
+                   </div>
++                ) : station.status === 'Occupied' && !showDetails ? (
++                  <div className="text-center py-6 border border-dashed border-slate-800 bg-slate-950/40 rounded text-slate-600 text-[11px] flex flex-col items-center justify-center gap-2 font-mono">
++                    <Zap className="w-5 h-5 text-amber-500/50" />
++                    <span className="text-slate-400 font-bold tracking-wider uppercase">OCCUPIED_BY_OTHER</span>
++                  </div>
+                 ) : (
+                   <div className="text-center py-6 border border-dashed border-slate-800 bg-slate-950/40 rounded text-slate-600 text-[11px] flex flex-col items-center justify-center gap-2 font-mono">
+                     {station.status === 'Maintenance' ? (
+@@ -533,7 +545,7 @@
+               {/* Controller buttons */}
+               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+                 {station.status === 'Available' ? (
+                   <button
+                     onClick={() => openActionModal(station.id, 'start')}
+                     disabled={availableTrucksForCharging.length === 0 && queue.filter(q => q.status === 'Waiting').length === 0}
+                     className="col-span-2 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white font-bold text-xs rounded transition-all flex items-center justify-center gap-1.5 shadow disabled:opacity-40"
+                   >
+                     <Play className="w-3 h-3 fill-current text-emerald-500" />
+                     เริ่มชาร์จไฟฟ้า
+                   </button>
+-                ) : station.status === 'Occupied' ? (
++                ) : station.status === 'Occupied' && showDetails ? (
+                   <button
+                     onClick={() => openActionModal(station.id, 'stop')}
+                     className="col-span-2 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded transition-all flex items-center justify-center gap-1.5 shadow"
+                   >
+                     <Square className="w-3 h-3 fill-current text-slate-950" />
+                     หยุดชาร์จ & บันทึก
+                   </button>
+                 ) : null}
+ 
+-                <button
+-                  onClick={() => handleToggleMaintenance(station.id, station.status)}
+-                  className={`col-span-2 py-1 text-[9px] font-bold font-mono rounded border transition-all text-center ${
+-                    station.status === 'Maintenance'
+-                      ? 'bg-slate-950 border-slate-800 text-emerald-400 hover:bg-slate-800'
+-                      : 'border-slate-800 bg-slate-950/20 text-slate-500 hover:text-slate-300 hover:bg-slate-900/50'
+-                  }`}
+-                >
+-                  {station.status === 'Maintenance' ? 'ENABLE_BAY_READY' : 'MAINTENANCE_TOGGLE'}
+-                </button>
++                {user?.role === 'Admin' && (
++                  <button
++                    onClick={() => handleToggleMaintenance(station.id, station.status)}
++                    className={`col-span-2 py-1 text-[9px] font-bold font-mono rounded border transition-all text-center ${
++                      station.status === 'Maintenance'
++                        ? 'bg-slate-950 border-slate-800 text-emerald-400 hover:bg-slate-800'
++                        : 'border-slate-800 bg-slate-950/20 text-slate-500 hover:text-slate-300 hover:bg-slate-900/50'
++                    }`}
++                  >
++                    {station.status === 'Maintenance' ? 'ENABLE_BAY_READY' : 'MAINTENANCE_TOGGLE'}
++                  </button>
++                )}
+               </div>
+             </div>
+           );

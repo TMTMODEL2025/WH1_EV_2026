@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Light Mode Overrides utilizing Tailwind CSS v4 variables */
+.light-mode {
+  /* Invert slate color palette natively */
+  --color-slate-950: #f8fafc; /* Main body bg */
+  --color-slate-900: #ffffff; /* Card / Sidebar / Header bg */
+  --color-slate-800: #e2e8f0; /* Thin borders / Dividers */
+  --color-slate-700: #cbd5e1; /* Accent borders */
+  --color-slate-600: #94a3b8; /* Medium-light borders */
+  --color-slate-500: #64748b; /* Muted secondary text */
+  --color-slate-400: #475569; /* Regular body text */
+  --color-slate-300: #334155; /* Sub-headings */
+  --color-slate-200: #1e293b; /* Main headings / Prominent text */
+  --color-slate-100: #0f172a; /* Strong display text */
+
+  color: #1e293b;
+}
+
+/* Ensure general text-white is visible as dark slate on light card backgrounds */
+.light-mode .text-white {
+  color: #0f172a !important;
+}
+
+/* Sidebar Specific Polish for Light Mode */
+.light-mode aside {
+  background-color: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+.light-mode aside .text-white {
+  color: #0f172a !important;
+}
+
+.light-mode aside .bg-slate-950 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Header Specific Polish */
+.light-mode header {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Form Fields and Inputs */
+.light-mode input,
+.light-mode select,
+.light-mode textarea {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.light-mode input[type="date"] {
+  color-scheme: light !important;
+}
+
+.light-mode input:focus,
+.light-mode select:focus,
+.light-mode textarea:focus {
+  border-color: #10b981 !important;
+}
+
+/* Interactive elements styled with slate dark colors */
+.light-mode .bg-slate-950 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.light-mode .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+  color: #10b981 !important;
+}
+
+.light-mode .hover\:bg-slate-800\/30:hover {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+}
+
+/* Fix charts rendering text inside light theme */
+.light-mode text {
+  fill: #475569 !important;
+}
+
+/* Dialog & Modal Layout Customization */
+.light-mode .fixed .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05) !important;
+}
+
+.light-mode .fixed .bg-slate-950 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-mode .fixed .text-slate-200 {
+  color: #1e293b !important;
+}
+
+/* Improve contrast for primary accent texts in light mode */
+.light-mode .text-emerald-400 {
+  color: #059669 !important; /* Slightly darker emerald for readability on white */
+}
+
+.light-mode .border-emerald-500 {
+  border-color: #059669 !important;
+}
+
+.light-mode .text-amber-400 {
+  color: #d97706 !important; /* Darker amber */
+}
+
+.light-mode .text-rose-400 {
+  color: #dc2626 !important; /* Darker rose */
+}
+
+.light-mode .text-blue-400 {
+  color: #2563eb !important; /* Darker blue */
+}
+
+/* Focused UI element styles */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > button:nth-of-type(1) {
+  background-color: #272829 !important;
+}
+
+
+/* SweetAlert2 Size Reduction */
+.swal2-popup {
+  width: 20em !important;
+  padding: 1rem !important;
+  border-radius: 1rem !important;
+}
+.swal2-title {
+  font-size: 1.25rem !important;
+  padding: 0 !important;
+}
+.swal2-html-container {
+  font-size: 0.875rem !important;
+  margin: 0.5rem 1rem 0.5rem !important;
+}
+.swal2-icon {
+  transform: scale(0.65);
+  margin: 0.5rem auto 0 auto !important;
+}
+.swal2-actions {
+  margin-top: 0.75rem !important;
+}
+.swal2-styled {
+  padding: 0.4rem 1.5rem !important;
+  font-size: 0.875rem !important;
+}
+
+/* Styling for Admin Login button to be clear and prominent in light/dark modes */
+#admin-login-submit-btn {
+  background-color: #e2e8f0 !important;
+  color: #020617 !important;
+}
+
+#admin-login-submit-btn:hover {
+  background-color: #ffffff !important;
+}
+
+.light-mode #admin-login-submit-btn {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+.light-mode #admin-login-submit-btn:hover {
+  background-color: #1e293b !important;
+}
+

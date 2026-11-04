@@ -1,0 +1,8 @@
+{
+  "name": "Remix EV Charging Management System 08.10.2026",
+  "description": "A comprehensive management system for electric towing trucks (EV) charging stations in industrial factories, using Google Sheets as a database.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
