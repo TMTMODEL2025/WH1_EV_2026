@@ -1,9 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/jpeg" href="./src/assets/images/ev_favicon_1784029126611.jpg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@19.0.1",
+          "react/jsx-runtime": "https://esm.sh/react@19.0.1/jsx-runtime",
+          "react-dom": "https://esm.sh/react-dom@19.0.1?deps=react@19.0.1",
+          "react-dom/client": "https://esm.sh/react-dom@19.0.1/client?deps=react@19.0.1",
+          "lucide-react": "https://esm.sh/lucide-react@0.546.0?deps=react@19.0.1",
+          "sweetalert2": "https://esm.sh/sweetalert2@11.26.25",
+          "firebase/app": "https://esm.sh/firebase@12.15.0/app",
+          "firebase/auth": "https://esm.sh/firebase@12.15.0/auth"
+        }
+      }
+    </script>
     <script>
       (function() {
         try {
@@ -28,18 +45,154 @@
     </script>
     <title>ระบบชาร์จรถไฟฟ้า TMT STEEL By Warehouse1</title>
   </head>
-  <body>
+  <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
     <script>
+      // Automatic Runtime Compiler for Static GitHub Pages (*.github.io) when served unbuilt from repository root
       (function() {
-        try {
-          if (window.location.hostname.endsWith('github.io') && document.querySelector('script[src*="src/main.tsx"]')) {
-            window.location.replace('./docs/index.html');
+        var isUnbuiltGitHubPages =
+          window.location.hostname.endsWith('github.io') &&
+          document.querySelector('script[src*="src/main.tsx"]');
+
+        if (!isUnbuiltGitHubPages) return;
+
+        var rootEl = document.getElementById('root');
+        if (rootEl) {
+          rootEl.innerHTML =
+            '<div style="min-height:100vh;background:#020617;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:\'Noto Sans Thai\',sans-serif;gap:12px;">' +
+            '<div style="width:40px;height:40px;border:3px solid rgba(16,185,129,0.2);border-top-color:#10b981;border-radius:50%;animation:tmtspin 0.8s linear infinite;"></div>' +
+            '<div style="font-size:14px;font-weight:700;color:#10b981;">กำลังโหลดระบบชาร์จรถไฟฟ้า TMT STEEL...</div>' +
+            '<style>@keyframes tmtspin{to{transform:rotate(360deg)}}</style>' +
+            '</div>';
+        }
+
+        function loadScript(src) {
+          return new Promise(function(resolve, reject) {
+            var s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        }
+
+        var moduleFiles = [
+          'firebase-applet-config.json',
+          'src/types/ev.ts',
+          'src/utils/date.ts',
+          'src/utils/pricing.ts',
+          'src/data/users.ts',
+          'src/services/firebaseAuth.ts',
+          'src/services/gasCodeTemplate.ts',
+          'src/services/googleSheetsDirect.ts',
+          'src/services/googleAppsScriptService.ts',
+          'src/components/ChargingCountdown.tsx',
+          'src/components/CustomLogin.tsx',
+          'src/components/Dashboard.tsx',
+          'src/components/GasSetupPanel.tsx',
+          'src/components/QueueManager.tsx',
+          'src/components/Reports.tsx',
+          'src/components/SessionsHistory.tsx',
+          'src/components/StationsList.tsx',
+          'src/components/TrucksList.tsx',
+          'src/components/UsersList.tsx',
+          'src/components/Analytics.tsx',
+          'src/App.tsx',
+          'src/main.tsx'
+        ];
+
+        Promise.all([
+          loadScript('https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4'),
+          loadScript('https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.9/babel.min.js'),
+          fetch('./src/index.css').then(function(r) { return r.ok ? r.text() : ''; }).catch(function() { return ''; })
+        ]).then(function(initResults) {
+          var rawCss = initResults[2] || '';
+          if (rawCss) {
+            var cleanCss = rawCss
+              .replace(/@import\s+["']tailwindcss["']\s*;?/g, '')
+              .replace(/@theme\s*\{[\s\S]*?\}/g, '');
+            var styleEl = document.createElement('style');
+            styleEl.textContent = cleanCss;
+            document.head.appendChild(styleEl);
           }
-        } catch (e) {}
+
+          return Promise.all(
+            moduleFiles.map(function(filePath) {
+              return fetch('./' + filePath).then(function(res) {
+                if (!res.ok) throw new Error('Failed to load ' + filePath + ' (' + res.status + ')');
+                return res.text();
+              }).then(function(content) {
+                return { filePath: filePath, content: content };
+              });
+            })
+          );
+        }).then(function(loadedFiles) {
+          var sourceMap = {};
+          loadedFiles.forEach(function(item) {
+            sourceMap[item.filePath] = item.content;
+          });
+
+          var blobMap = {};
+
+          function resolveModulePath(fromFile, spec) {
+            if (!spec.startsWith('.')) return spec;
+            var dirParts = fromFile.split('/');
+            dirParts.pop();
+            var specParts = spec.split('/');
+            for (var i = 0; i < specParts.length; i++) {
+              var part = specParts[i];
+              if (!part || part === '.') continue;
+              if (part === '..') dirParts.pop();
+              else dirParts.push(part);
+            }
+            var resolved = dirParts.join('/');
+            if (blobMap[resolved]) return blobMap[resolved];
+            var exts = ['.ts', '.tsx', '.json'];
+            for (var j = 0; j < exts.length; j++) {
+              if (blobMap[resolved + exts[j]]) return blobMap[resolved + exts[j]];
+            }
+            return spec;
+          }
+
+          for (var i = 0; i < moduleFiles.length; i++) {
+            var file = moduleFiles[i];
+            var rawCode = sourceMap[file] || '';
+            var compiledCode = '';
+
+            if (file.endsWith('.json')) {
+              compiledCode = 'export default ' + rawCode + ';';
+            } else {
+              var withoutCss = rawCode.replace(/import\s+['"][^'"]+\.css['"]\s*;?/g, '');
+              var rewritten = withoutCss.replace(/(from\s+['"])(\.[^'"]+)(['"])/g, function(_, p1, spec, p3) {
+                return p1 + resolveModulePath(file, spec) + p3;
+              });
+              var transformed = window.Babel.transform(rewritten, {
+                filename: file,
+                presets: [
+                  ['react', { runtime: 'automatic' }],
+                  ['typescript', { isTSX: true, allExtensions: true }]
+                ]
+              });
+              compiledCode = transformed.code || 'export {};';
+            }
+
+            var blob = new Blob([compiledCode], { type: 'text/javascript' });
+            blobMap[file] = URL.createObjectURL(blob);
+          }
+
+          return import(blobMap['src/main.tsx']);
+        }).catch(function(err) {
+          console.error('GitHub Pages Bootstrap Error:', err);
+          if (rootEl) {
+            rootEl.innerHTML =
+              '<div style="min-height:100vh;background:#020617;color:#f87171;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;">' +
+              '<h3 style="font-size:16px;font-weight:700;margin-bottom:8px;">เกิดข้อผิดพลาดในการโหลดแอปบน GitHub Pages</h3>' +
+              '<p style="font-size:12px;color:#94a3b8;max-width:480px;">' + (err && err.message ? err.message : String(err)) + '</p>' +
+              '</div>';
+          }
+        });
       })();
     </script>
   </body>
 </html>
-
