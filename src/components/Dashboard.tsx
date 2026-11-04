@@ -415,8 +415,10 @@ export default function Dashboard({ trucks, stations, queue, sessions, users, on
               const station = stations.find(st => st.id === session.stationId || st.occupyingTruckId === session.truckId);
               const startT = new Date(session.startTime);
               const elapsedMins = isNaN(startT.getTime()) ? 0 : Math.max(0, Math.round((currentTime.getTime() - startT.getTime()) / 60000));
-              const currentSOC = Math.min(100, Math.round((session.startSOC || 20) + elapsedMins / 1.45));
-              const currentEnergy = Math.round(((elapsedMins * 16) / 60) * 100) / 100;
+              const maxDurationMins = Math.max(0, Math.round((100 - (session.startSOC || 20)) * 1.45));
+              const activeDurationMins = Math.min(elapsedMins, maxDurationMins);
+              const currentSOC = Math.min(100, Math.round((session.startSOC || 20) + activeDurationMins / 1.45));
+              const currentEnergy = Math.round(((16 * activeDurationMins) / 60) * 100) / 100;
               const currentCost = Math.round((currentEnergy * (session.pricePerUnit || 3.50)) * 100) / 100;
 
               return (

@@ -50,12 +50,8 @@ const applySessionGuardsAndPatches = (session: SessionLog): SessionLog => {
     const patchedDuration = 48;
     const currentStartSOC = session.startSOC || 0;
     const patchedEndSOC = session.endSOC && session.endSOC > currentStartSOC ? session.endSOC : 100;
-    const energy = session.energyConsumed && session.energyConsumed > 0 
-      ? session.energyConsumed 
-      : Math.round(((patchedDuration * 16) / 60) * 100) / 100;
-    const cost = session.totalCost && session.totalCost > 0 
-      ? session.totalCost 
-      : Math.round(energy * (session.pricePerUnit || 3.50) * 100) / 100;
+    const energy = Math.round(((16 * patchedDuration) / 60) * 100) / 100;
+    const cost = Math.round(energy * (session.pricePerUnit || 3.50) * 100) / 100;
 
     return {
       ...session,
@@ -86,7 +82,7 @@ const applySessionGuardsAndPatches = (session: SessionLog): SessionLog => {
           const guardedDuration = Math.min(180, estMinutesToFull);
           const guardedEndMs = startMs + (guardedDuration * 60000);
           const guardedEndTime = getThailandISOString(new Date(guardedEndMs));
-          const guardedEnergy = Math.round(((guardedDuration * 16) / 60) * 100) / 100;
+          const guardedEnergy = Math.round(((16 * guardedDuration) / 60) * 100) / 100;
           const guardedCost = Math.round(guardedEnergy * (session.pricePerUnit || 3.50) * 100) / 100;
 
           return {
@@ -94,13 +90,26 @@ const applySessionGuardsAndPatches = (session: SessionLog): SessionLog => {
             endTime: guardedEndTime,
             endSOC: 100,
             duration: guardedDuration,
-            energyConsumed: session.energyConsumed || guardedEnergy,
-            totalCost: session.totalCost || guardedCost,
+            energyConsumed: guardedEnergy,
+            totalCost: guardedCost,
             status: 'Completed'
           };
         }
       }
     }
+  }
+
+  // 3. Enforce unified standard formula for all completed sessions:
+  // ENERGY kWh = (16 kW * durationMinutes) / 60
+  // COST THB = ENERGY kWh * pricePerUnit
+  if (session.status?.toLowerCase() === 'completed' && session.duration > 0) {
+    const standardEnergy = Math.round(((16 * session.duration) / 60) * 100) / 100;
+    const standardCost = Math.round((standardEnergy * (session.pricePerUnit || 3.50)) * 100) / 100;
+    return {
+      ...session,
+      energyConsumed: standardEnergy,
+      totalCost: standardCost,
+    };
   }
 
   return session;
@@ -1460,36 +1469,19 @@ export default function App() {
 
     const finalDuration = explicitDuration !== undefined ? explicitDuration : Math.max(0, Math.round(calculatedDuration * 100) / 100);
 
-    // 1.2 Calculate Energy Consumed (kWh) based on Battery Capacity delta and Charger Power Output
-    const stationPower = station?.powerOutput || 16;
-    const socGain = Math.max(0, endSOC - startSOC);
-    let calculatedEnergy = 0;
-    
-    if (startSOC >= 100 || endSOC <= startSOC || socGain <= 0) {
-      calculatedEnergy = 0;
-    } else if (truck?.batteryCapacity && endSOC > startSOC) {
-      calculatedEnergy = (truck.batteryCapacity * socGain) / 100;
-    } else if (endSOC > startSOC) {
-      calculatedEnergy = (stationPower * (finalDuration / 60));
-    }
-
-    if (startSOC < 100 && endSOC > startSOC && calculatedEnergy <= 0) {
-      const minEnergyFromDuration = (stationPower * (finalDuration / 60));
-      if (minEnergyFromDuration > 0) {
-        calculatedEnergy = minEnergyFromDuration;
-      }
-    }
+    // 1.2 Calculate Energy Consumed (kWh) strictly using: (16 kW * durationMinutes) / 60
+    const calculatedEnergy = finalDuration > 0 ? (16 * finalDuration) / 60 : 0;
 
     const finalEnergy = explicitEnergy !== undefined 
       ? explicitEnergy 
-      : (startSOC >= 100 || endSOC <= startSOC ? 0 : Math.max(0, Math.round(calculatedEnergy * 100) / 100));
+      : Math.max(0, Math.round(calculatedEnergy * 100) / 100);
     
-    // 1.3 Calculate Total Cost (THB)
+    // 1.3 Calculate Total Cost (THB) strictly using: ENERGY kWh * pricePerUnit
     const pricePerUnit = activeSession?.pricePerUnit || 3.5000;
     const computedCost = finalEnergy * (pricePerUnit || 3.5000);
     const finalCost = explicitCost !== undefined 
       ? explicitCost 
-      : (startSOC >= 100 || endSOC <= startSOC ? 0 : Math.max(0, Math.round(computedCost * 100) / 100));
+      : Math.max(0, Math.round(computedCost * 100) / 100);
 
     const finalOdometer = explicitOdometer !== undefined ? explicitOdometer : (activeSession?.odometer || truck?.currentOdometer || 0);
 

@@ -179,6 +179,7 @@ export default function SessionsHistory({
     };
 
     const rows = sortedSessions.map((s) => {
+      const isCharging = s.status?.toLowerCase() === 'charging';
       const startD = s.startTime ? new Date(s.startTime) : null;
       const endD = s.endTime ? new Date(s.endTime) : null;
       const dateStr = startD && !isNaN(startD.getTime()) ? formatDateToTH(startD) : '-';
@@ -187,9 +188,17 @@ export default function SessionsHistory({
         : '-';
       const endTimeStr = endD && !isNaN(endD.getTime())
         ? endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Bangkok' })
-        : (s.status?.toLowerCase() === 'charging' ? 'กำลังชาร์จ' : '-');
-      const costVal = s.totalCost ?? ((s.energyConsumed || 0) * (s.pricePerUnit || 3.5));
-      const statusTh = s.status?.toLowerCase() === 'charging'
+        : (isCharging ? 'กำลังชาร์จ' : '-');
+
+      const elapsedMins = startD && !isNaN(startD.getTime()) ? Math.max(1, Math.round((Date.now() - startD.getTime()) / 60000)) : 0;
+      const durationVal = isCharging
+        ? Math.min(elapsedMins, Math.round((100 - (s.startSOC || 0)) * 1.45))
+        : (s.duration || 0);
+      const energyVal = Math.round(((16 * durationVal) / 60) * 100) / 100;
+      const priceVal = s.pricePerUnit || 3.5;
+      const costVal = Math.round((energyVal * priceVal) * 100) / 100;
+
+      const statusTh = isCharging
         ? 'กำลังชาร์จ'
         : (s.isAutoCompleted || s.endSOC >= 100 ? 'เสร็จสิ้น (Auto 100%)' : 'เสร็จสิ้น');
 
@@ -202,11 +211,11 @@ export default function SessionsHistory({
         startTimeStr,
         endTimeStr,
         s.startSOC ?? 0,
-        s.status?.toLowerCase() === 'charging' ? '-' : (s.endSOC ?? 0),
-        (s.energyConsumed || 0).toFixed(2),
-        s.duration || 0,
+        isCharging ? '-' : (s.endSOC ?? 0),
+        energyVal.toFixed(2),
+        durationVal,
         s.odometer || '-',
-        (s.pricePerUnit || 3.5).toFixed(4),
+        priceVal.toFixed(4),
         costVal.toFixed(2),
         statusTh
       ].map(escapeCsvField).join(',');
