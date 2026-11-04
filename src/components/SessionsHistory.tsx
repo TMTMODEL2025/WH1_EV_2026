@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { SessionLog } from '../types/ev';
-import { Clock, Zap, History, ClipboardList, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Search, Calendar, X, Coins, Download, RefreshCw, Database } from 'lucide-react';
+import { Clock, Zap, History, ClipboardList, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Search, Calendar, X, Coins, Download, RefreshCw, Database, FileSpreadsheet } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 import { getThailandDateString, formatDateToTH } from '../utils/date';
 
@@ -141,6 +142,100 @@ export default function SessionsHistory({
   const avgDuration = completedSessions.length > 0 ? Math.round(totalDuration / completedSessions.length) : 0;
   const avgCost = completedSessions.length > 0 ? totalCost / completedSessions.length : 0;
 
+  const handleExportExcel = () => {
+    if (sortedSessions.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ไม่มีข้อมูลสำหรับส่งออก',
+        text: 'ไม่พบรายการประวัติการชาร์จตามเงื่อนไขที่เลือก',
+        confirmButtonColor: '#10b981',
+        background: '#0f172a',
+        color: '#f8fafc',
+      });
+      return;
+    }
+
+    const headers = [
+      'Session ID',
+      'วันที่',
+      'รหัสรถ (Truck ID)',
+      'ตู้ชาร์จ (Station ID)',
+      'พนักงานขับรถ (Operator)',
+      'เวลาเริ่มชาร์จ',
+      'เวลาสิ้นสุดชาร์จ',
+      'SOC เริ่มต้น (%)',
+      'SOC สิ้นสุด (%)',
+      'พลังงานที่ใช้ (kWh)',
+      'ระยะเวลาชาร์จ (นาที)',
+      'เลขไมล์ (km)',
+      'ราคาต่อหน่วย (บาท)',
+      'ค่าไฟฟ้ารวม (บาท)',
+      'สถานะ'
+    ];
+
+    const escapeCsvField = (val: any) => {
+      const str = val === null || val === undefined ? '' : String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const rows = sortedSessions.map((s) => {
+      const startD = s.startTime ? new Date(s.startTime) : null;
+      const endD = s.endTime ? new Date(s.endTime) : null;
+      const dateStr = startD && !isNaN(startD.getTime()) ? formatDateToTH(startD) : '-';
+      const startTimeStr = startD && !isNaN(startD.getTime())
+        ? startD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Bangkok' })
+        : '-';
+      const endTimeStr = endD && !isNaN(endD.getTime())
+        ? endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Bangkok' })
+        : (s.status?.toLowerCase() === 'charging' ? 'กำลังชาร์จ' : '-');
+      const costVal = s.totalCost ?? ((s.energyConsumed || 0) * (s.pricePerUnit || 3.5));
+      const statusTh = s.status?.toLowerCase() === 'charging'
+        ? 'กำลังชาร์จ'
+        : (s.isAutoCompleted || s.endSOC >= 100 ? 'เสร็จสิ้น (Auto 100%)' : 'เสร็จสิ้น');
+
+      return [
+        s.id || '-',
+        dateStr,
+        s.truckId || '-',
+        s.stationId || '-',
+        s.operatorName || '-',
+        startTimeStr,
+        endTimeStr,
+        s.startSOC ?? 0,
+        s.status?.toLowerCase() === 'charging' ? '-' : (s.endSOC ?? 0),
+        (s.energyConsumed || 0).toFixed(2),
+        s.duration || 0,
+        s.odometer || '-',
+        (s.pricePerUnit || 3.5).toFixed(4),
+        costVal.toFixed(2),
+        statusTh
+      ].map(escapeCsvField).join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.map(escapeCsvField).join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = getThailandDateString();
+    link.href = url;
+    link.setAttribute('download', `EV_Charging_History_${dateStamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: `ส่งออกไฟล์ Excel สำเร็จ (${sortedSessions.length.toLocaleString()} รายการ)`,
+      showConfirmButton: false,
+      timer: 2500,
+      background: '#1e293b',
+      color: '#f8fafc',
+    });
+  };
+
   return (
     <div className="space-y-2.5 md:space-y-4">
       {/* Metrics Banner: 2x2 Compact Grid on Mobile, 4 Columns on Desktop */}
@@ -247,14 +342,23 @@ export default function SessionsHistory({
       <div className="bg-slate-900 rounded-xl border border-slate-800 p-2.5 md:p-5 shadow-sm">
         {/* Header & Status Filter Row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 md:gap-4 mb-2.5 md:mb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 md:gap-2">
               <History className="w-4 h-4 md:w-4.5 md:h-4.5 text-emerald-400 shrink-0" />
               <h2 className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">ประวัติการชาร์จไฟฟ้า</h2>
             </div>
 
-            {/* Mobile Rows Per Page Selector */}
-            <div className="flex sm:hidden items-center gap-1 font-mono">
+            {/* Mobile Export Excel + Rows Per Page Selector */}
+            <div className="flex sm:hidden items-center gap-1.5 font-mono">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-[10px] rounded flex items-center gap-1 shadow transition-all active:scale-95 cursor-pointer"
+                title="ส่งออกไฟล์ Excel (.csv)"
+              >
+                <FileSpreadsheet className="w-3 h-3 stroke-[2.5]" />
+                <span>Export Excel</span>
+              </button>
               <select
                 value={recordsPerPage}
                 onChange={(e) => {
@@ -309,8 +413,17 @@ export default function SessionsHistory({
               </button>
             </div>
 
-            <div className="hidden sm:flex items-center gap-1.5 font-mono">
-              <span className="text-slate-500 text-[10px] font-bold uppercase">แถวต่อหน้า:</span>
+            <div className="hidden sm:flex items-center gap-2 font-mono">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1.5 shadow transition-all active:scale-95 cursor-pointer"
+                title="ส่งออกประวัติการชาร์จเป็นไฟล์ Excel (.csv)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Export Excel</span>
+              </button>
+              <span className="text-slate-500 text-[10px] font-bold uppercase ml-1">แถวต่อหน้า:</span>
               <select
                 value={recordsPerPage}
                 onChange={(e) => {
